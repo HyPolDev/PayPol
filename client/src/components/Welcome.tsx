@@ -1,25 +1,118 @@
+import { useEffect, useState } from "react"
 import { AiFillPlayCircle } from "react-icons/ai"
-import { SiCommonworkflowlanguage, SiEthereum } from "react-icons/si"
+import { SiEthereum } from "react-icons/si"
 import { BsInfoCircle } from "react-icons/bs"
-import { connect } from "http2"
 import Input from "./Input"
 import LoadingSpinner from "./LoadingSpinner.tsx"
+import { ethers } from 'ethers';
+import { contractABI, contractAddress } from '../utils/constant';
+
 const Welcome = () => {
+    const [currentAccount, setCurrentAccount] = useState<(string[] | undefined)>()
+    const [formData, setFormData] = useState({ addressTo: "", amount: "", keyword: "", message: "" })
+    const [isLoading, setIsLoading] = useState(false)
+    const [transactionCount, setTransactionCount] = useState(localStorage.getItem('transactionCount'))
+
+    const { ethereum } = window;
+
+    const getEthereumContract = () => {
+        if (!ethereum) {
+            console.warn("Ethereum object is not available, please install MetaMask or another provider.");
+            return;
+        }
+        const provider = new ethers.providers.Web3Provider(ethereum);
+        const signer = provider.getSigner();
+        const transactionContract = new ethers.Contract(contractAddress, contractABI, signer)
+        if (!transactionContract) return console.error("Could not find the Smart Contract in the blockchain")
+
+        return transactionContract;
+    }
+
+    const checkIfWalletIsConnected = async () => {
+        if (!ethereum) return console.warn("Please install any wallet provider like Metamask")
+
+        const accounts = await ethereum.request({ method: "eth_accounts" })
+
+        if (accounts.length) {
+            setCurrentAccount(accounts[0]);
+        } else {
+            console.warn("No accounts found")
+        }
+    }
+
+    const connectWallet = async () => {
+        try {
+            if (!ethereum) return alert("Please install MetaMask.");
+
+            const accounts = await ethereum.request({ method: "eth_requestAccounts", });
+
+            setCurrentAccount(accounts[0]);
+            window.location.reload();
+        } catch (error) {
+            console.log(error);
+
+            throw new Error("No ethereum object");
+        }
+    };
+
+
+    const sendTransaction = async () => {
+        try {
+            if (!ethereum) return alert("Please install a wallet provider")
+
+            const { addressTo, amount, keyword, message } = formData
+            const transactionContract = getEthereumContract();
+
+            const parsedAmount = ethers.utils.parseEther(amount);
+
+            await ethereum.request({
+                method: 'eth_sendTransaction',
+                params: [{
+                    from: currentAccount,
+                    to: addressTo,
+                    gas: '0x5208',
+                    value: parsedAmount._hex,
+                }]
+            })
+
+            const transactionHash = await transactionContract?.addToBlockchain(addressTo, parsedAmount, message, keyword)
+
+            setIsLoading(true);
+            console.log(`Loading... - ${transactionHash.hash}`)
+            await transactionHash.wait();
+            setIsLoading(false);
+            console.log(`Success - ${transactionHash.hash}`)
+
+            const transactionCount = await transactionContract?.getTransactionCount()
+
+            setTransactionCount(transactionCount.toNumber())
+
+        } catch (error) {
+            console.log(error);
+            throw new Error()
+        }
+
+    }
+
+    const handleChange = (e: any, name: string) => {
+        setFormData((prevState) => ({ ...prevState, [name]: e.target.value }))
+    }
+
+    const handleSubmit = (e: any) => {
+        const { addressTo, amount, keyword, message } = formData
+        e.preventDefault()
+
+        if (!addressTo || !amount || !keyword || !message) {
+            return console.error("Empty fields")
+        }
+        sendTransaction()
+    }
+
+    useEffect(() => {
+        checkIfWalletIsConnected()
+    }, [])
 
     const commonStyles = "min-h-[70px] sm:px-0 px-2 sm:min-w-[120px] flex justify-center items-center border-[0.5px] border-gray-400 text-sm font-light text-white"
-
-    const connectWallet = () => {
-        return ""
-    }
-
-    const handleChange = () => {
-        return ""
-    }
-
-    const handleSubmit = () => {
-
-    }
-
     return (
         <div className="flex w-full justify-center">
             <div className="flex mf:flex-row flex-col items-start justify between md:p-20 py-12 px4">
@@ -28,15 +121,17 @@ const Welcome = () => {
                     <p className="text-left mt-5 text-white font-light md:w-9/12 w-11/12 text-base text-gradient">
                         Explore the world. Pay quickly, easily and secure <br /> whenever wherever however you want
                     </p>
-                    <button
-                        type="button"
-                        onClick={() => connectWallet()}
-                        className="flex flex-row justify-center items-center my-5 bg-[#2952e3] p-3 rounded-full cursor-pointer hover:bg-[#2546bf]"
-                    >
-                        <p className="text-white text-base">
-                            Connect Wallet
-                        </p>
-                    </button>
+                    {!currentAccount &&
+                        (<button
+                            type="button"
+                            onClick={() => connectWallet()}
+                            className="flex flex-row justify-center items-center my-5 bg-[#2952e3] p-3 rounded-full cursor-pointer hover:bg-[#2546bf]"
+                        >
+                            <p className="text-white text-base">
+                                Connect Wallet
+                            </p>
+                        </button>
+                        )}
                     <div className="grid sm:grid-cols-3 grid-cols-2 w-full mt-10 text-gradient">
                         <div className={`rounded-tl-2xl ${commonStyles}`}>
                             Feature 1
@@ -80,18 +175,18 @@ const Welcome = () => {
                     </div>
 
                     <div className="p-5 sm:w-96 w-full flex flex-col justify-start items-center blue-glassmorphism">
-                        <Input placeholder={"Adress To"} name={"adressTo"} type="text" handleChange={() => handleChange()} />
-                        <Input placeholder={"Аmount (Eth)"} name={"amount"} type="number" handleChange={() => handleChange()} />
-                        <Input placeholder={"Keyword"} name={"Keyword"} type="text" handleChange={() => handleChange()} />
-                        <Input placeholder={"Memo"} name={"message"} type="text" handleChange={() => handleChange()} />
+                        <Input placeholder={"Adress To"} name={"addressTo"} type="text" handleChange={handleChange} />
+                        <Input placeholder={"Аmount (Eth)"} name={"amount"} type="number" handleChange={handleChange} />
+                        <Input placeholder={"Keyword"} name={"keyword"} type="text" handleChange={handleChange} />
+                        <Input placeholder={"Memo"} name={"message"} type="text" handleChange={handleChange} />
 
                         <div className="h-[1px] w-full bg-gray-400 my-2" />
-                        {false ? (
+                        {isLoading ? (
                             <LoadingSpinner />
                         ) : (
                             <button
                                 type="button"
-                                onClick={() => handleSubmit()}
+                                onClick={handleSubmit}
                                 className="text-white w-full mt-2 border-[1px] p-2 border-[#3d4f7c] hover:bg-[#2546bf] rounded-full cursor-pointer transition duration-300 ease-in-out" >
                                 Send now
                             </button>
