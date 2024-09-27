@@ -1,7 +1,6 @@
 import Navbar from "./components/Navbar"
 import Welcome from "./components/Welcome"
 import Footer from "./components/Footer"
-import Transactions from "./components/Transactions"
 import Services from "./components/Services"
 const App = () => {
 
@@ -12,7 +11,6 @@ const App = () => {
         <Welcome />
       </div>
       <Services />
-      <Transactions />
       <Footer />
     </div>
   )

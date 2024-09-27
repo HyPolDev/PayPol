@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react"
-import { AiFillPlayCircle } from "react-icons/ai"
 import { SiEthereum } from "react-icons/si"
 import { BsInfoCircle } from "react-icons/bs"
 import Input from "./Input"
 import LoadingSpinner from "./LoadingSpinner.tsx"
 import { ethers } from 'ethers';
 import { contractABI, contractAddress } from '../utils/constant';
+import JSConfetti from 'js-confetti'
 
 const Welcome = () => {
     const [currentAccount, setCurrentAccount] = useState<(string[] | undefined)>()
@@ -13,7 +13,7 @@ const Welcome = () => {
     const [isLoading, setIsLoading] = useState(false)
     const [transactionCount, setTransactionCount] = useState(localStorage.getItem('transactionCount'))
 
-    const { ethereum } = window;
+    const { ethereum }: any = window;
 
     const getEthereumContract = () => {
         if (!ethereum) {
@@ -83,10 +83,17 @@ const Welcome = () => {
             setIsLoading(false);
             console.log(`Success - ${transactionHash.hash}`)
 
+            const jsConfetti = new JSConfetti();
+            const delay = (ms: number) =>
+                new Promise((resolve) => setTimeout(resolve, ms));
+
+            for (let i = 0; i < 6; i++) {
+                jsConfetti.addConfetti();
+                await delay(200);
+            }
             const transactionCount = await transactionContract?.getTransactionCount()
 
             setTransactionCount(transactionCount.toNumber())
-
         } catch (error) {
             console.log(error);
             throw new Error()
@@ -116,7 +123,7 @@ const Welcome = () => {
     return (
         <div className="flex w-full justify-center">
             <div className="flex mf:flex-row flex-col items-start justify between md:p-20 py-12 px4">
-                <div className="flex flex-1 justify-start flex-col mf:mr-10">
+                <div className="flex flex-1 justify-start flex-col mf:mr-24">
                     <h1 className="text-3xl sm:text-5xl text-white text-gradient py-1">If you have internet <br />You got money</h1>
                     <p className="text-left mt-5 text-white font-light md:w-9/12 w-11/12 text-base text-gradient">
                         Explore the world. Pay quickly, easily and secure <br /> whenever wherever however you want
@@ -148,8 +155,8 @@ const Welcome = () => {
                         <div className={commonStyles}>
                             Feature 5
                         </div>
-                        <div className={`rounded-br-2xl ${commonStyles}`}>
-                            Feature 6
+                        <div className={`rounded-br-2xl ${commonStyles} text-center`}>
+                            {`>1 transactions to date`}
                         </div>
                     </div>
                 </div>
@@ -174,7 +181,7 @@ const Welcome = () => {
                         </div>
                     </div>
 
-                    <div className="p-5 sm:w-96 w-full flex flex-col justify-start items-center blue-glassmorphism">
+                    <div className="p-5 sm:w-107 w-full flex flex-col justify-start items-center blue-glassmorphism">
                         <Input placeholder={"Adress To"} name={"addressTo"} type="text" handleChange={handleChange} />
                         <Input placeholder={"Аmount (Eth)"} name={"amount"} type="number" handleChange={handleChange} />
                         <Input placeholder={"Keyword"} name={"keyword"} type="text" handleChange={handleChange} />
