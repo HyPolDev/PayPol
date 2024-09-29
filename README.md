@@ -1,5 +1,7 @@
-# PayPol
+<img src="./client/src/public/logo.png" style="background-color: rgb(50,180,255);">
 A scaling analog solution to bizzum in the ethereum network. Now deployed in the Holesky network. For now it's just a proof of concept to easily send transaction though wallets
+
+<img src="./client/src/public/Teaser.png">
 
 ## 🛠️ Tech&Tolls used 
 
